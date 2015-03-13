@@ -4,8 +4,8 @@ unset key
 
 set title "FDL"
 
-set xrange [ -500 : 500 ] noreverse nowriteback
-set yrange [ -500 : 500 ] noreverse nowriteback
+set xrange [ -1000 : 1000 ] noreverse nowriteback
+set yrange [ -1000 : 1000 ] noreverse nowriteback
 
 unset key
 set size ratio -1

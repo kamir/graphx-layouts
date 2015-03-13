@@ -11,7 +11,7 @@ and open the template in the editor.
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
     <body>
-	Debug data location: <a href="."><b>folder</b></a>   ::   All steps: <a href="showRelaxation.html"><b>report</b></a>
+	Debug data location: <a href=".">folder</a>   ::   All steps: <a href="showRelaxation.html">report</a>
 	<hr>
         <table border="0">
             <thead>

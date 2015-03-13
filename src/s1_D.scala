@@ -16,23 +16,32 @@ import scala.util.Random
 import java.io._
 import sys.process._
 import java.util.Calendar
-
-// control the runtime of the layouter
-val doShuffle: Boolean = false
-
-val iterations = 20 // max number of iterations influences the cooling-plan
-val maxIterations = 20 // this is the max used in the routine, allows to stop early with same cooling conditions
+import java.nio.file.StandardCopyOption.REPLACE_EXISTING
+import java.nio.file.Files.copy
+import java.nio.file.Paths.get
 
 // Where is the debug data stores?
 val base =  "/mnt/hgfs/SHARE.VM.MAC/DATA/"
 val folder = "/graphxlayouter/"
+val srcFolder = "/home/training/graphx-layouts/graphx-layouts/src/main/html/"
+
+implicit def toPath( filename: String) = get(filename) 
+copy( srcFolder + "showRelaxationSingle.html", base + folder + "showRelaxationSingle.html", REPLACE_EXISTING )
+copy( srcFolder + "showRelaxation.html", base + folder + "showRelaxation.html", REPLACE_EXISTING )
+
+// control the runtime of the layouter
+val doShuffle: Boolean = true
+
+val iterations = 20 // max number of iterations influences the cooling-plan
+val maxIterations = 20 // this is the max used in the routine, allows to stop early with same cooling conditions
+
 
 // How large is the layout area?
 val width = 10000
 val height = 10000
 
 // How are the forces defined?
-val gamma: Double = 100.0  // gravity constant
+val gamma: Double = 0.0  // gravity constant
 
 val repForceScaler = 1.0
 val attrForceScaler = 1.0
@@ -795,9 +804,9 @@ def layoutFDFR( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)
  *  Use one of the DEMO-Graphs
  *
  */
-//val cGraphS = createDemoGraph1()   // House of Nicolaus    5 nodes    8 links
+val cGraphS = createDemoGraph1()   // House of Nicolaus    5 nodes    8 links
 //val cGraphS = createDemoGraph2()   // simple BOX           4 node     4 links
-val cGraphS = createDemoGraph3()   // simple Node Pair     2 nodes    1 link
+//val cGraphS = createDemoGraph3()   // simple Node Pair     2 nodes    1 link
 
 
 /*******************************************************************************************************************************
