@@ -4,6 +4,8 @@ unset key
 
 set title "FDL"
 
+set xzeroaxis
+set yzeroaxis
 set xrange [ -1000 : 1000 ] noreverse nowriteback
 set yrange [ -1000 : 1000 ] noreverse nowriteback
 

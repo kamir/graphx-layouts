@@ -30,7 +30,7 @@ copy( srcFolder + "showRelaxationSingle.html", base + folder + "showRelaxationSi
 copy( srcFolder + "showRelaxation.html", base + folder + "showRelaxation.html", REPLACE_EXISTING )
 
 // control the runtime of the layouter
-val doShuffle: Boolean = true
+val doShuffle: Boolean = false
 
 val iterations = 20 // max number of iterations influences the cooling-plan
 val maxIterations = 20 // this is the max used in the routine, allows to stop early with same cooling conditions
@@ -43,7 +43,7 @@ val height = 10000
 // How are the forces defined?
 val gamma: Double = 0.0  // gravity constant
 
-val repForceScaler = 1.0
+val repForceScaler = 0.01
 val attrForceScaler = 1.0
 
 val cf: Double = 0.1
@@ -717,12 +717,13 @@ def layoutFDFR( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)
 	sb.append( ">>> Start FR-Layout procedure: n=" + iterations + " (nr of iterations)." + nl )
 
 	var gs = g
-        if ( doShuffle ) gs = shuffle( g )
-
- 	dumpWithLayout( gs, fileNameDebugDump + ".SHUFFLED", "#" )
+        if ( doShuffle ) {
+		gs = shuffle( g )
+		dumpWithLayout( gs, fileNameDebugDump + ".SHUFFLED", "#" )
+	}
 
 	// setup initial temperature
-	temperature = 0.1 * math.sqrt(area) // current temperature
+	temperature = cf * math.sqrt(area) // current temperature
 
         for(iteration <- 1 to maxIterations) {
 
@@ -748,7 +749,7 @@ def layoutFDFR( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)
 	 	val vNewPositions = gAttr.vertices.mapValues( (id, v) => updatePos( v ) )
 	        gs = Graph(vNewPositions, gs.edges, defaultNode)
 // 		dumpWithLayout( gs, fileNameDebugDump, "#" )
- 		dumpWithLayout( gs, fileNameDebugDump + ".C", "#" )
+ 		dumpWithLayout( gs, fileNameDebugDump + ".C", "#" )  // C is now plotted ...
         
 	        // cool
 		cool(iteration)
