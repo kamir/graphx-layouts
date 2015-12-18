@@ -35,22 +35,7 @@ def convert( g: Graph[ Any, String ] ) : Graph[ (String, Double, Double, (Double
 }
 
 
-def rep( p1: (String, Double, Double, (Double,Double,Double,Double)), p2: (String, Double, Double, (Double,Double,Double,Double)) ) : (String, Double, Double, (Double,Double,Double,Double)) = {	
-
-
-	val v1 = new Vector( p1._2, p1._3 )			
-	val v2 = new Vector( p2._2, p2._3 )			
-
-	val delta = v1 - v2
-
-	var deltaLength = math.max(epsilon, delta.lenght)
-	val force = k * k / deltaLength
-	val disp = delta * force / deltaLength
-
-
-	( p2._1, p2._2, p2._3, (disp.x, disp.y, 0.0, 0.0))
-	
-}
+ 
 
 val fileName = "blog/wiki-Talk.txt"
 

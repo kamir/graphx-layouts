@@ -113,7 +113,7 @@ def getHeight: Double = height
 	
 def getK: Double = k
 
-val iterations = 15
+val iterations = 10
 
 //
 // during graph preparation we reduce the size a bit ...
@@ -509,7 +509,7 @@ def calcAttraction( g: Graph[ (String, Double, Double, (Double,Double,Double,Dou
  *
  *
  */
-def layoutFDFR( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] ) : Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] = {
+//def layoutFDFR2( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] ) : Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] = {
 
 
 //        ci = 0
@@ -543,7 +543,7 @@ def layoutFDFR( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)
 		// def mapValues[VD2](map: (VertexId, VD) => VD2): VertexRDD[VD2]
 	 	// val vNewPositions = gAttr.vertices.mapValues( (id, v) => updatePos( v ) )
         
-        //        gs = Graph(vNewPositions, g.edges, defaultNode)
+        // gs = Graph(vNewPositions, g.edges, defaultNode)
 
 	    // cool
 		// cool(iteration)
@@ -552,17 +552,18 @@ def layoutFDFR( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)
 //	gs // this is the last state of our layout
 
 
-    g	
-}
+//    g	
+//}
 
 /**
  * The Fruchetman Reingold Layout is calculated with n = 10 iterations.
  *
  *
  */
-def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] ) : Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] = {
+def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ], i: Integer ) : Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] = {
 
-	println( "> Start the Layout procedure: n=" + iterations + " (nr of iterations)." )
+    
+	println( "> Start the Layout procedure: n=" + i + " (nr of iterations)." )
 
     var gs = shuffle( g )
 	println( "> Shuffled the graph." )
@@ -572,7 +573,7 @@ def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,
     
 	temperature = 0.1 * math.sqrt(area) // current temperature
 
-	for(iteration <- 1 to iterations) {
+	for(iteration <- 1 to i) {
 
 		ci = iteration
 	
@@ -600,10 +601,10 @@ def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,
 	println( "> Final Temperature: (T=" + temperature + ")" )
 	
 	// finally, we create another graph since we want to continue in Spark ...
-	gs = Graph(vNewPositions, g.edges, defaultNode)
+	// gs = Graph(vNewPositions, g.edges, defaultNode)
 
 
-	gs // this is the last state of our layout
+	g // this is the last state of our layout
 }
 
 /**
@@ -711,11 +712,10 @@ println( "> The graph data was prepared." )
 println( "> Ready to do a layout." )
 
 
-val gLSL = layoutFDFRLocally( cGraphS )
+val gLSL = layoutFDFRLocally( cGraphS, 5 )
+// val gLS  = layoutFDFR2( cGraphS )
 
-// val gLS  = layoutFDFR( cGraphS )
-
-dumpWithLayout( gLS, fileNameDump , "" )
+dumpWithLayout( gLSL, fileNameDump , "" )
 
 println( "> DONE!" )
 println( "> Created EDGE list: " + fileNameDump )
