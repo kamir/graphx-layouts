@@ -560,6 +560,7 @@ def calcAttraction( g: Graph[ (String, Double, Double, (Double,Double,Double,Dou
  *
  *
  */
+
 def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ], i: Integer ) : Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] = {
 
     
@@ -568,8 +569,11 @@ def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,
     var gs = shuffle( g )
 	println( "> Shuffled the graph." )
 
-	val edges = gs.edges;
-    val vertices= gs.vertices;
+	val edges = gs.edges
+    val vertices= gs.vertices
+    
+    val eA = edges.collect
+    val vA = vertices.collect
     
 	temperature = 0.1 * math.sqrt(area) // current temperature
 
@@ -582,9 +586,28 @@ def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,
 		// Repulsion is calculated for all pairs of vertexes if they are 
 		// different vertexes with different IDs ...
 	  	// val gRep = calcRepulsion( vertices )
+	  	for(i <- 0 until vA.length){
+    		for(j <- 0 until vA.length){
+    			
+    			println("i'th element is: (VERTEX) " + vA(i));
+				println("j'th element is: (VERTEX) " + vA(j));
+				
+				
+				
+				println("    => FORCE 1: ... REP1 ");
+				println("    => FORCE 2: ... REP2 ");
+			}
+		}
+	
+	
 
 		// Attraction is along the links only
 	  	// val gAttr = calcAttraction( edges ) 
+	 	for(i <- 0 until eA.length){
+    		println("i'th element is: (EDGE) " + eA(i));
+			println("    => FORCE 1: ... ATTR1 ");
+	     	println("    => FORCE 2: ... ATTR2 ");
+	     }
 
 		// OPTIONALLY WE CAN DEBUG EACH STEP 
  		// dumpWithLayout( gAttr, fileNameDebugDump, "#" )
@@ -597,7 +620,17 @@ def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,
 		cool(iteration)
 	}
 	
+	println( vA );
+	for(i <- 0 until vA.length){
+    	println("i'th element is: (VERTEX) " + vA(i));
+	}
 	
+	
+	println( eA );
+		for(i <- 0 until eA.length){
+    	println("i'th element is: (EDGE) " + eA(i));
+	}
+	 
 	println( "> Final Temperature: (T=" + temperature + ")" )
 	
 	// finally, we create another graph since we want to continue in Spark ...
@@ -680,23 +713,26 @@ def createDemoGraph() : Graph[ (String, Double, Double, (Double,Double,Double,Do
  *
  */
 
+
+
+ 
 /**
  *
  *  Load the Wiki-Talk Graph
  *
  */
-//val fileName = "file:///home/training/graphx-layouts/data/wiki-Talk.txt"
-//val fileNameDump = "/mnt/hgfs/SHARE.VM.MAC/DATA/wiki-Talk_" + percentage + ".dump"
-//val graphS = loadEdges( fileName )
-//val cGraphS = convert( graphS )
+val fileName = "blog/wiki-Talk.txt"
+val fileNameDump = WD + "/fdl/wiki-talk-graph.dump"
+val graphS = loadEdges( fileName )
+val cGraphS = convert( graphS )
 
 /**
  *
  *  Create the DEMO-Graph
  *
  */
-val fileNameDump = WD + "/fdl/demo-graph.dump"
-val cGraphS = createDemoGraph()
+//val fileNameDump = WD + "/fdl/demo-graph.dump"
+//val cGraphS = createDemoGraph()
 
 // Just to be sure what was loaded ...
 //dump( cGraphS, fileNameDump )
