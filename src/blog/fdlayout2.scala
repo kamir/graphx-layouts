@@ -20,6 +20,7 @@ import org.apache.spark.rdd.RDD
 import scala.util.Random
 import java.io._
 import sys.process._
+import java.util.Hashtable
 
 /**
  * Some inspiration for this project came from: 
@@ -69,6 +70,10 @@ import sys.process._
 		}
 
 		def lenght = math.sqrt(x * x + y * y)
+		
+		def asString: String = {
+			return "x=" + x + " y=" + y + "   l=" + this.lenght
+		}
 
 	}
 
@@ -76,6 +81,9 @@ import sys.process._
 // we define a working directory
 //
 val WD = "."
+
+var REP_SCALE = 0.0001
+var ATT_SCALE = 0.0001
 
 val fileNameDebugDump = WD + "/fdl/demo-graph.debug.dump"
 
@@ -219,9 +227,12 @@ def dump( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)), Dou
 	
 	val all: RDD[String] = header.union( f )
 
+	
 	printToFile(new File( fn + ".triples.csv" )) {
 		p => all.collect.foreach(p.println(_))
 	}
+        
+  println( "### Dumplocation : " + fn + ".triples.csv"  )
 
 }
 
@@ -393,7 +404,7 @@ def attractionForce(mp: ((Double,Double),(Double,Double)) ) : (Double,Double) = 
 	val deltaLength = math.max(epsilon, delta.lenght) // avoid x/0
 	val force = deltaLength * deltaLength / k
 
-	val disp = delta * force / deltaLength
+	val disp = delta * force * ATT_SCALE / deltaLength
 	
 	(disp.x, disp.y)		
 }
@@ -407,7 +418,7 @@ def attractionForceInverted(mp: ((Double,Double),(Double,Double)) ) : (Double,Do
 	val deltaLength = math.max(epsilon, delta.lenght) // avoid x/0
 	val force = deltaLength * deltaLength / k
 
-	val disp = delta * ( -1.0 * force ) / deltaLength
+	val disp = delta * ( -1.0 * force * ATT_SCALE) / deltaLength
 	
 	(disp.x, disp.y)		
 }
@@ -556,80 +567,191 @@ def calcAttraction( g: Graph[ (String, Double, Double, (Double,Double,Double,Dou
 //}
 
 /**
- * The Fruchetman Reingold Layout is calculated with n = 10 iterations.
+ * The Fruchterman Reingold Layout is calculated with n = 10 iterations.
  *
  *
  */
 
-def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ], i: Integer ) : Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] = {
+def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,Double)),Double ], 
+                       i: Integer,
+                       fn: String ) : Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] = {
 
+    println( "### FOLDER: " + fn )
+    val file = new File( fn )
+    file.mkdirs()
+  
+    println( "### " + file.exists )
+
+
+    println( ">>> Layout : layoutFDFRLocally() ..."  )
+
+    val displacements = new java.util.Hashtable[String,Vector]()
+    val verts = new java.util.Hashtable[Long,(Long,(String, Double, Double, (Double,Double,Double,Double)))]()
     
-	println( "> Start the Layout procedure: n=" + i + " (nr of iterations)." )
+   	println( "> Start the Layout procedure: n=" + i + " (nr of iterations)." )
 
-    var gs = shuffle( g )
-	println( "> Shuffled the graph." )
+//    var gs = shuffle( g )
+    var gs = g
+//	  println( "> Shuffled the graph g into gs." )
 
-	val edges = gs.edges
+	  val edges = gs.edges
     val vertices= gs.vertices
     
-    val eA = edges.collect
-    val vA = vertices.collect
+    var eA = edges.collect
+    var vA = vertices.collect
     
 	temperature = 0.1 * math.sqrt(area) // current temperature
 
 	for(iteration <- 1 to i) {
-
+    
+	  
 		ci = iteration
 	
 		println( "> Temperature: (T=" + temperature + ")" )
 
 		// Repulsion is calculated for all pairs of vertexes if they are 
 		// different vertexes with different IDs ...
-	  	// val gRep = calcRepulsion( vertices )
+		  /***
+	  	 *      FOR THE PARALLEL VERSION WE USE THIS:
+	  	 *  
+	  	 * val gRep = calcRepulsion( vertices )
+	  	 *
+	  	 */
 	  	for(i <- 0 until vA.length){
+	  	    
+	  	    // set vertex.disp to zero
+	  	  var vertex_disp = new Vector( 0.0, 0.0 )
+	   		val P1 = vA(i)
+   	    var contribs = 0
+   	    
     		for(j <- 0 until vA.length){
+    		  	
+    			println("i'th element is: " + P1 + " >>> " + P1.getClass + " >>>> " + P1._2.getClass );
     			
-    			println("i'th element is: (VERTEX) " + vA(i));
-				println("j'th element is: (VERTEX) " + vA(j));
+					if ( i != j )  {
+    			  contribs = contribs + 1
+    				val P2 = vA(j)
+    			
+    			//println("j'th element is: (VERTEX) " + p2);
 				
+					val disp = repulsionForce( ( (P1._2._2,P1._2._3),(P2._2._2,P2._2._3)) )
 				
+					// increase vertice.disp by disp
+					vertex_disp = vertex_disp + new Vector( REP_SCALE * disp._1, REP_SCALE * disp._2 ) 
 				
-				println("    => FORCE 1: ... REP1 ");
-				println("    => FORCE 2: ... REP2 ");
+					println("    => F_REP( " + i + " " + j + " ): " + disp)
+					
+				}
 			}
+			println("    => F_REP_total( " + i + " ): {" + contribs + "} <" + P1 + "> " + vertex_disp.asString)
+      val nodeDispl = displacements.get( ""+P1._1 );
+			if ( nodeDispl == null ) {
+			  displacements.put( ""+P1._1, vertex_disp );
+			  verts.put( P1._1, P1 )
+			}
+			
 		}
-	
-	
 
-		// Attraction is along the links only
-	  	// val gAttr = calcAttraction( edges ) 
-	 	for(i <- 0 until eA.length){
+	
+    //
+		// Attraction is along the links only, so we iterate on the linklist
+		//
+	  // val gAttr = calcAttraction( edges ) 
+	 	
+		for(i <- 0 until eA.length){
+				
+		    val p1 = eA(i).srcId
+		    val p2 = eA(i).dstId
+
+		    val P1 = verts.get( p1 )
+		    val P2 = verts.get( p2 )
+
+		    val coords = ( (P1._2._2,P1._2._3) ,(P2._2._2,P2._2._3) )
+		    
+		    val f1 = attractionForce( coords )
+		    val f2 = attractionForceInverted( coords )
+		  
+		    val vertex_dispF1 = new Vector( f1._1, f1._2 )
+		    val vertex_dispF2 = new Vector( f2._1, f2._2 )
+		    
     		println("i'th element is: (EDGE) " + eA(i));
-			println("    => FORCE 1: ... ATTR1 ");
-	     	println("    => FORCE 2: ... ATTR2 ");
-	     }
+		 	  println("    => FORCE 1: ... " + f1);
+	     	println("    => FORCE 2: ... " + f2);
+	     	
 
+	     	val nodeDispl1 = displacements.get( ""+P1._1 );
+	     	val nodeDispl2 = displacements.get( ""+P2._1 );
+
+	     	if ( nodeDispl1 == null ) {
+	     	  displacements.put( ""+P1._1, vertex_dispF1 );
+	     	}
+	     	else {
+	     	  displacements.put( ""+P1._1, nodeDispl1 + vertex_dispF1 );
+	     	}
+	     	
+	     	if ( nodeDispl2 == null ) {
+	     	  displacements.put( ""+P2._1, vertex_dispF2 );
+	     	}
+	     	else {
+	     	  displacements.put( ""+P2._1, nodeDispl2 + vertex_dispF2 );
+	     	}
+	     	
+			}
+
+		for( i <- 0 until vA.length ){
+		  
+		  	var p1 = vA(i)
+		  	
+		  	val f1 = displacements.get( ""+p1._1 )
+		  	
+		  	println ( "MOVE: " + p1 +  " by " + f1.asString );
+        // println ( "    : " + p1.getClass  + "  *** " + vA.getClass);
+
+        val nP = (p1._1,(p1._2._1, p1._2._2 + f1.x, p1._2._3 + f1.y, (0.0,0.0,0.0,0.0)))
+    
+		  	vA(i) = nP; 
+		  	
+		}
+	     	
+	    
+
+		
 		// OPTIONALLY WE CAN DEBUG EACH STEP 
  		// dumpWithLayout( gAttr, fileNameDebugDump, "#" )
 
-		// Repulsion and Attraction are in super position as they are overlaing forces
-		
+		// Repulsion and Attraction are in super position 
+		// so lets simply add all contributions 	
 		
         
-	    // cool
+	  // cool the system and go on to next step ...
 		cool(iteration)
 	}
-	
-	println( vA );
-	for(i <- 0 until vA.length){
+
+  ///// WRITE THE final layout 
+    
+  
+  val bwN = new BufferedWriter( new FileWriter( fn + "/nodes.csv" ) )
+    
+  println( vA )
+
+  bwN.write( "label" + "\t" + "posX" + "\t" + "posY" + "\n" )
+  for(i <- 0 until vA.length){
     	println("i'th element is: (VERTEX) " + vA(i));
+    	val n = vA(i)
+    	bwN.write( n._2._1 + "\t" + n._2._2 + "\t" + n._2._3 + "\n" )
 	}
+	bwN.close()
 	
-	
+	val bwL = new BufferedWriter( new FileWriter( fn + "/links.csv" ) )
+  
 	println( eA );
-		for(i <- 0 until eA.length){
+  bwL.write( "SOURCE"  + "\t" + "TARGET" + "\t" + "WEIGHT" + "\n" )
+	for(i <- 0 until eA.length){
     	println("i'th element is: (EDGE) " + eA(i));
+    	val e = eA(i)
+    	bwL.write( e.srcId + "\t" + e.dstId + "\t1.0\n" )
 	}
+	bwL.close()
 	 
 	println( "> Final Temperature: (T=" + temperature + ")" )
 	
@@ -650,26 +772,25 @@ def layoutFDFRLocally( g: Graph[ (String, Double, Double, (Double,Double,Double,
  * or if the functional network differes fundamentally from the underlying structural network.
  *
  */
-def createDemoGraph() : Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] = { 
-
+def createDemoGraph( gn: String ) : Graph[ (String, Double, Double, (Double,Double,Double,Double)), Double ] = { 
         
-    //                         name,   x,      y        attr.x attr.z
-	val nodes: RDD[(VertexId, (String, Double, Double, (Double,Double,Double,Double)))] =
-  		  sc.parallelize(Array((1L, ("a", 180.0,50.0, (0.0, 0.0, 0.0, 0.0)) ), 
-                                       (2L, ("b", 600.0,100.0, (0.0, 0.0, 0.0, 0.0))),
-        		               (3L, ("c", 30.0,130.0, (0.0, 0.0, 0.0, 0.0)) ), 
-                                       (4L, ("c", 130.0,830.0, (0.0, 0.0, 0.0, 0.0)) ), 
-                                       (5L, ("d", 400.0,400.0, (0.0, 0.0, 0.0, 0.0)))))
+  //                              name,       x,      y,     f.x,   f.y,  att1,att2
+	val nodes: RDD[(VertexId, (   String,  Double, Double, (Double,Double,Double,Double)))] =
+  		  sc.parallelize(Array((1L, ("a",   180.0,   50.0, (0.0   ,0.0   ,0.0   ,0.0   ))), 
+                             (2L, ("b",   600.0,  100.0, (0.0   ,0.0   ,0.0   ,0.0   ))),
+        		                 (3L, ("c",    30.0,  130.0, (0.0   ,0.0   ,0.0   ,0.0   ))), 
+                             (4L, ("d",   130.0,  830.0, (0.0   ,0.0   ,0.0   ,0.0   ))), 
+                             (5L, ("e",   400.0,  400.0, (0.0   ,0.0   ,0.0   ,0.0   )))))
 
 	val statLink: RDD[Edge[Double]] =
   		  sc.parallelize(Array(Edge(1L, 2L, 1.0), 
-                                       Edge(2L, 3L, 1.0),
-                  	 	       Edge(3L, 5L, 1.0), 
-                                       Edge(5L, 4L, 1.0),
-				       Edge(4L, 1L, 1.0), 
-                                       Edge(4L, 2L, 1.0),
-				       Edge(1L, 3L, 1.0), 
-                                       Edge(4L, 3L, 1.0)))
+                             Edge(1L, 3L, 1.0), 
+                             Edge(2L, 3L, 1.0),
+                  	 	       Edge(3L, 5L, 1.0),
+                  	 	       Edge(4L, 1L, 1.0), 
+                             Edge(4L, 2L, 1.0),
+				                     Edge(4L, 3L, 1.0), 
+                             Edge(5L, 4L, 1.0)))
 
 //val functLink: RDD[Edge[Double]] =
 //  sc.parallelize(Array(Edge(3L, 7L, 1.0), Edge(5L, 3L, 1.0),
@@ -721,34 +842,47 @@ def createDemoGraph() : Graph[ (String, Double, Double, (Double,Double,Double,Do
  *  Load the Wiki-Talk Graph
  *
  */
-val fileName = "blog/wiki-Talk.txt"
-val fileNameDump = WD + "/fdl/wiki-talk-graph.dump"
-val graphS = loadEdges( fileName )
-val cGraphS = convert( graphS )
+//val fileName = "blog/wiki-Talk.txt"
+//val fileNameDump = WD + "/fdl/wiki-talk-graph.dump"
+//val graphS = loadEdges( fileName )
+//val cGraphS = convert( graphS )
+
 
 /**
- *
  *  Create the DEMO-Graph
  *
+ *      simple: 
+ *      
  */
-//val fileNameDump = WD + "/fdl/demo-graph.dump"
-//val cGraphS = createDemoGraph()
+val gn = "simple"
+val cGraphS = createDemoGraph( gn )
+val fileNameDump = WD + "/fdl/demo-graph" + gn + ".dump"
 
+//
 // Just to be sure what was loaded ...
-//dump( cGraphS, fileNameDump )
-dumpWithLayout( cGraphS, fileNameDump + ".ini2", "#" )
+//
+dump( cGraphS, fileNameDump + gn + ".PREP" )
+// dumpWithLayout( cGraphS, fileNameDump + gn + ".PREP", "#" )
 
 val sizeOfGraph = cGraphS.vertices.count()
-println( "> Size of the graph : " + sizeOfGraph + " nodes." )
+println( "> Size of the graph  : " + sizeOfGraph + " nodes." )
+ 
+// 
+// define the spring constant
+// 
+k = 0.8 * math.sqrt(area / sizeOfGraph) // force constant
 
-k = 1000 * math.sqrt(area / sizeOfGraph) // force constant
+REP_SCALE = 0.0001
+ATT_SCALE = 0.00001
 
-println( "> Force constant    : " + k + " a.u." )
-println( "> The graph data was prepared." )
+println( "> Area               : " + area  )
+println( "> Spring constant    : " + k + " a.u." )
+println( "> Graph data and area were prepared sucessfully." )
 println( "> Ready to do a layout." )
 
+val gLSL = layoutFDFRLocally( cGraphS, 0 , "/GITHUB/ETOSHA.WS/tmp/original_" + gn  )
+val gLSL = layoutFDFRLocally( cGraphS, 500 , "/GITHUB/ETOSHA.WS/tmp/fdl_" + gn  )
 
-val gLSL = layoutFDFRLocally( cGraphS, 5 )
 // val gLS  = layoutFDFR2( cGraphS )
 
 dumpWithLayout( gLSL, fileNameDump , "" )
@@ -756,9 +890,11 @@ dumpWithLayout( gLSL, fileNameDump , "" )
 println( "> DONE!" )
 println( "> Created EDGE list: " + fileNameDump )
 
-val result = "gnuplot ./blog/fdlplot.gnuplot" !!
+// val result1 = "gnuplot ./blog/fdlplot.gnuplot" !!
 
-println(result)
+val result2 = "gnuplot ./blog/fdlplot-local.gnuplot" !!
+
+println(result2)
 
 
 

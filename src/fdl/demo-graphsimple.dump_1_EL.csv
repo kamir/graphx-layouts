@@ -1,0 +1,9 @@
+Source	Target	Strength
+a	b	1.0
+a	c	1.0
+b	c	1.0
+c	e	1.0
+d	a	1.0
+d	b	1.0
+d	c	1.0
+e	d	1.0

@@ -72,6 +72,11 @@ import sys.process._
 
 	}
 
+
+
+// class GraphXLayoutExample {
+
+
 //
 // we define a working directory
 //
@@ -654,6 +659,10 @@ def createDemoGraph() : Graph[ (String, Double, Double, (Double,Double,Double,Do
         graphS
 }
 
+
+
+
+
 /**
  *
  * This Snippet is an implementation of the Fruchterman-Reingold Force Directed Graph Layout Algorithm.
@@ -678,6 +687,7 @@ def createDemoGraph() : Graph[ (String, Double, Double, (Double,Double,Double,Do
  * which also contains an angle. 
  *
  */
+// def main(args: Array[String]) {
 
 /**
  *
@@ -725,11 +735,11 @@ val result = "gnuplot ./blog/fdlplot.gnuplot" !!
 println(result)
 
 
+// }
 
 
 
-
-
+// }
 
 
 
